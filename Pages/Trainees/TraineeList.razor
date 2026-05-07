@@ -1,0 +1,147 @@
+@page "/trainees"
+@inject TraineeService TraineeService
+@inject TrackService TrackService
+@inject NavigationManager Nav
+
+<PageTitle>Trainees</PageTitle>
+
+<h1>Trainees</h1>
+
+<LoadingSpinner IsLoading="_isLoading" Message="Loading trainees..." />
+
+@if (!_isLoading)
+{
+<div class="mb-3">
+    <a href="/trainees/new" class="btn btn-primary">
+        <span class="bi bi-person-plus-fill me-1"></span> New Trainee
+    </a>
+</div>
+
+@if (_trainees.Count == 0)
+{
+    <div class="alert alert-info">No trainees found. Click <strong>New Trainee</strong> to add one.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width:50px">#</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Email</th>
+                    <th>Track</th>
+                    <th class="text-center">Status</th>
+                    <th style="width:180px" class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var trainee in _trainees)
+                {
+                    <tr>
+                        <td>@trainee.Id</td>
+                        <td>
+                            <a href="/trainee-profile/@trainee.Id" class="fw-semibold text-decoration-none">
+                                @trainee.Name
+                            </a>
+                        </td>
+                        <td>
+                            @if (trainee.Gender == Gender.Male)
+                            {
+                                <span class="badge bg-primary"><span class="bi bi-gender-male me-1"></span>Male</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger"><span class="bi bi-gender-female me-1"></span>Female</span>
+                            }
+                        </td>
+                        <td class="text-muted small">@trainee.Email</td>
+                        <td>
+                            @{
+                                var track = trainee.TrackId.HasValue
+                                    ? TrackService.GetById(trainee.TrackId.Value)
+                                    : null;
+                            }
+                            @if (track is not null)
+                            {
+                                <a href="/tracks/@track.Id" class="text-decoration-none">@track.Name</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (trainee.IsGraduated)
+                            {
+                                <span class="badge bg-success">Graduated</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">In Progress</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a href="/trainees/@trainee.Id/edit" class="btn btn-sm btn-outline-primary me-1">
+                                <span class="bi bi-pencil-fill"></span> Edit
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => AskDelete(trainee)">
+                                <span class="bi bi-trash-fill"></span> Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+}
+
+<ConfirmDialog IsVisible="_showDialog"
+               Title="Delete Trainee"
+               Message="@_dialogMessage"
+               OnConfirm="ExecuteDelete"
+               OnCancel="CancelDelete" />
+
+@code {
+    private List<Trainee> _trainees = new();
+    private bool _isLoading = true;
+    private bool _showDialog;
+    private string _dialogMessage = string.Empty;
+    private Trainee? _traineeToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(600);
+        LoadTrainees();
+        _isLoading = false;
+    }
+
+    private void LoadTrainees() => _trainees = TraineeService.GetAll();
+
+    private void AskDelete(Trainee trainee)
+    {
+        _traineeToDelete = trainee;
+        _dialogMessage = $"Are you sure you want to delete \"{trainee.Name}\"? This action cannot be undone.";
+        _showDialog = true;
+    }
+
+    private void ExecuteDelete()
+    {
+        if (_traineeToDelete is not null)
+        {
+            TraineeService.Delete(_traineeToDelete.Id);
+            LoadTrainees();
+        }
+        _showDialog = false;
+        _traineeToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        _showDialog = false;
+        _traineeToDelete = null;
+    }
+}

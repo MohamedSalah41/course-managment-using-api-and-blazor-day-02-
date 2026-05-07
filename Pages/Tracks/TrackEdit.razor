@@ -1,0 +1,97 @@
+@page "/tracks/edit/{Id:int}"
+@inject TrackService TrackService
+@inject NavigationManager Nav
+
+<PageTitle>Edit Track</PageTitle>
+
+@if (_notFound)
+{
+    <div class="alert alert-warning">
+        <span class="bi bi-exclamation-triangle me-2"></span>
+        Track with ID <strong>@Id</strong> was not found.
+        <a href="/tracks" class="alert-link ms-2">Back to list</a>
+    </div>
+}
+else if (_track is null)
+{
+    <LoadingSpinner Message="Loading track..." />
+}
+else
+{
+    <h1>Edit Track</h1>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <EditForm Model="_track" OnValidSubmit="HandleSubmit" OnInvalidSubmit="HandleInvalidSubmit">
+                        <DataAnnotationsValidator />
+
+                        @if (_showErrors)
+                        {
+                            <ValidationSummary />
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="name">Track Name <span class="text-danger">*</span></label>
+                            <InputText id="name" class="form-control" @bind-Value="_track.Name" />
+                            <ValidationMessage For="() => _track.Name" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="description">Description</label>
+                            <InputTextArea id="description" class="form-control" @bind-Value="_track.Description" rows="4" />
+                            <ValidationMessage For="() => _track.Description" class="text-danger small" />
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="bi bi-check-circle me-1"></span> Save Changes
+                            </button>
+                            <a href="/tracks/@Id" class="btn btn-outline-secondary">
+                                <span class="bi bi-eye me-1"></span> View Details
+                            </a>
+                            <a href="/tracks" class="btn btn-outline-secondary">
+                                <span class="bi bi-arrow-left me-1"></span> Cancel
+                            </a>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Track? _track;
+    private bool _notFound;
+    private bool _showErrors;
+
+    protected override void OnParametersSet()
+    {
+        var found = TrackService.GetById(Id);
+        if (found is null)
+        {
+            _notFound = true;
+        }
+        else
+        {
+            _track = new Track
+            {
+                Id = found.Id,
+                Name = found.Name,
+                Description = found.Description
+            };
+        }
+    }
+
+    private void HandleSubmit()
+    {
+        TrackService.Update(_track!);
+        Nav.NavigateTo("/tracks");
+    }
+
+    private void HandleInvalidSubmit() => _showErrors = true;
+}

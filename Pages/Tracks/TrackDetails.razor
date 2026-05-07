@@ -1,0 +1,130 @@
+@page "/tracks/{Id:int}"
+@inject TrackService TrackService
+@inject TraineeService TraineeService
+
+<PageTitle>Track Details</PageTitle>
+
+@if (_notFound)
+{
+    <div class="alert alert-warning">
+        <span class="bi bi-exclamation-triangle me-2"></span>
+        Track with ID <strong>@Id</strong> was not found.
+        <a href="/tracks" class="alert-link ms-2">Back to list</a>
+    </div>
+}
+else if (_track is null)
+{
+    <LoadingSpinner Message="Loading track details..." />
+}
+else
+{
+    <h1>@_track.Name</h1>
+
+    <div class="row g-4">
+
+        <div class="col-md-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold bg-primary text-white">
+                    <span class="bi bi-info-circle me-2"></span> Track Information
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">ID</dt>
+                        <dd class="col-sm-8">@_track.Id</dd>
+
+                        <dt class="col-sm-4 text-muted">Name</dt>
+                        <dd class="col-sm-8 fw-semibold">@_track.Name</dd>
+
+                        <dt class="col-sm-4 text-muted">Description</dt>
+                        <dd class="col-sm-8">
+                            @(string.IsNullOrWhiteSpace(_track.Description) ? "—" : _track.Description)
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Trainees</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary">@_trainees.Count</span>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <a href="/tracks/edit/@_track.Id" class="btn btn-sm btn-outline-primary">
+                        <span class="bi bi-pencil-fill me-1"></span> Edit
+                    </a>
+                    <a href="/tracks" class="btn btn-sm btn-outline-secondary">
+                        <span class="bi bi-arrow-left me-1"></span> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold bg-secondary text-white">
+                    <span class="bi bi-people-fill me-2"></span> Enrolled Trainees
+                </div>
+                <div class="card-body p-0">
+                    @if (_trainees.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No trainees are assigned to this track yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var trainee in _trainees)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a href="/trainee-profile/@trainee.Id" class="text-decoration-none">@trainee.Name</a>
+                                        </td>
+                                        <td class="text-muted small">@trainee.Email</td>
+                                        <td class="text-center">
+                                            @if (trainee.IsGraduated)
+                                            {
+                                                <span class="badge bg-success">Graduated</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">In Progress</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Track? _track;
+    private List<Trainee> _trainees = new();
+    private bool _notFound;
+
+    protected override void OnParametersSet()
+    {
+        _track = TrackService.GetById(Id);
+        if (_track is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        _trainees = TraineeService.GetAll()
+                                  .Where(t => t.TrackId == Id)
+                                  .ToList();
+    }
+}

@@ -1,0 +1,108 @@
+@page "/tracks"
+@inject TrackService TrackService
+@inject NavigationManager Nav
+
+<PageTitle>Tracks</PageTitle>
+
+<h1>Tracks</h1>
+
+<LoadingSpinner IsLoading="_isLoading" Message="Loading tracks..." />
+
+@if (!_isLoading)
+{
+<div class="mb-3">
+    <a href="/tracks/create" class="btn btn-primary">
+        <span class="bi bi-plus-circle me-1"></span> New Track
+    </a>
+</div>
+
+@if (_tracks.Count == 0)
+{
+    <div class="alert alert-info">No tracks found. Click <strong>New Track</strong> to add one.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width:60px">#</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th style="width:180px" class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var track in _tracks)
+                {
+                    <tr>
+                        <td>@track.Id</td>
+                        <td>
+                            <a href="/tracks/@track.Id" class="fw-semibold text-decoration-none">@track.Name</a>
+                        </td>
+                        <td class="text-muted">
+                            @(string.IsNullOrWhiteSpace(track.Description) ? "—" : track.Description)
+                        </td>
+                        <td class="text-center">
+                            <a href="/tracks/edit/@track.Id" class="btn btn-sm btn-outline-primary me-1">
+                                <span class="bi bi-pencil-fill"></span> Edit
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => AskDelete(track)">
+                                <span class="bi bi-trash-fill"></span> Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+}
+
+<ConfirmDialog IsVisible="_showDialog"
+               Title="Delete Track"
+               Message="@_dialogMessage"
+               OnConfirm="ExecuteDelete"
+               OnCancel="CancelDelete" />
+
+@code {
+    private List<Track> _tracks = new();
+    private bool _isLoading = true;
+    private bool _showDialog;
+    private string _dialogMessage = string.Empty;
+    private Track? _trackToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(600);
+        LoadTracks();
+        _isLoading = false;
+    }
+
+    private void LoadTracks() => _tracks = TrackService.GetAll();
+
+    private void AskDelete(Track track)
+    {
+        _trackToDelete = track;
+        _dialogMessage = $"Are you sure you want to delete \"{track.Name}\"? This action cannot be undone.";
+        _showDialog = true;
+    }
+
+    private void ExecuteDelete()
+    {
+        if (_trackToDelete is not null)
+        {
+            TrackService.Delete(_trackToDelete.Id);
+            LoadTracks();
+        }
+        _showDialog = false;
+        _trackToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        _showDialog = false;
+        _trackToDelete = null;
+    }
+}

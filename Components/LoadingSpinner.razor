@@ -1,0 +1,19 @@
+@if (IsLoading)
+{
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary me-3" role="status" style="width: @Size; height: @Size;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <span class="text-muted fs-5">@Message</span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsLoading { get; set; } = true;
+    [Parameter] public string Message { get; set; } = "Loading...";
+
+    [Parameter] public string Size { get; set; } = "3rem";
+}

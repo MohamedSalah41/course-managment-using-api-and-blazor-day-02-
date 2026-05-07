@@ -1,0 +1,141 @@
+@page "/trainee-profile/{Id:int}"
+@inject TraineeService TraineeService
+@inject TrackService TrackService
+
+<PageTitle>Trainee Profile</PageTitle>
+
+@if (_notFound)
+{
+    <div class="alert alert-warning">
+        <span class="bi bi-exclamation-triangle me-2"></span>
+        Trainee with ID <strong>@Id</strong> was not found.
+        <a href="/trainees" class="alert-link ms-2">Back to list</a>
+    </div>
+}
+else if (_trainee is null)
+{
+    <LoadingSpinner Message="Loading profile..." />
+}
+else
+{
+    <h1>@_trainee.Name</h1>
+
+    <div class="row g-4">
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold bg-primary text-white">
+                    <span class="bi bi-person-lines-fill me-2"></span> Personal Information
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">ID</dt>
+                        <dd class="col-sm-8">@_trainee.Id</dd>
+
+                        <dt class="col-sm-4 text-muted">Name</dt>
+                        <dd class="col-sm-8 fw-semibold">@_trainee.Name</dd>
+
+                        <dt class="col-sm-4 text-muted">Gender</dt>
+                        <dd class="col-sm-8">
+                            @if (_trainee.Gender == Gender.Male)
+                            {
+                                <span class="badge bg-primary"><span class="bi bi-gender-male me-1"></span>Male</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger"><span class="bi bi-gender-female me-1"></span>Female</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Email</dt>
+                        <dd class="col-sm-8">
+                            <a href="mailto:@_trainee.Email">@_trainee.Email</a>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Mobile</dt>
+                        <dd class="col-sm-8">
+                            <a href="tel:@_trainee.MobileNo">@_trainee.MobileNo</a>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Birthdate</dt>
+                        <dd class="col-sm-8">
+                            @(_trainee.Birthdate.HasValue
+                                ? _trainee.Birthdate.Value.ToString("dd MMM yyyy")
+                                : "—")
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold bg-secondary text-white">
+                    <span class="bi bi-journal-bookmark-fill me-2"></span> Track & Status
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">Track</dt>
+                        <dd class="col-sm-8">
+                            @if (_track is not null)
+                            {
+                                <a href="/tracks/@_track.Id" class="text-decoration-none fw-semibold">@_track.Name</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not assigned</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (_trainee.IsGraduated)
+                            {
+                                <span class="badge bg-success fs-6">
+                                    <span class="bi bi-patch-check-fill me-1"></span> Graduated
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark fs-6">
+                                    <span class="bi bi-hourglass-split me-1"></span> In Progress
+                                </span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <a href="/trainees/@_trainee.Id/edit" class="btn btn-sm btn-outline-primary">
+                        <span class="bi bi-pencil-fill me-1"></span> Edit
+                    </a>
+                    <a href="/trainees" class="btn btn-sm btn-outline-secondary">
+                        <span class="bi bi-arrow-left me-1"></span> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Trainee? _trainee;
+    private Track? _track;
+    private bool _notFound;
+
+    protected override void OnParametersSet()
+    {
+        _trainee = TraineeService.GetById(Id);
+        if (_trainee is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        _track = _trainee.TrackId.HasValue
+            ? TrackService.GetById(_trainee.TrackId.Value)
+            : null;
+    }
+}
